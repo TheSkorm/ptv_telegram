@@ -89,6 +89,10 @@ function sendMessage(value) {
     console.log("sending message for - " + value.disruption_id)
     var deferred = Q.defer();
     var message = ""
+    if (value.title.toLowerCase().indexOf("minor") != -1) {
+        deferred.resolve(value)
+        return deferred.promise
+    }
     if (value.description.toLowerCase().indexOf("fire") != -1) message += "🔥"
     if (value.description.toLowerCase().indexOf("police") != -1) message += "🚓"
     if (value.description.toLowerCase().indexOf("suicide") != -1) message += "⚰️"
