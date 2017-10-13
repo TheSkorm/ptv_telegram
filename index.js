@@ -31,16 +31,16 @@ function getDisruptions() {
 function processDisruptions(body) {
     var promiseArray = [];
     var disruptions = JSON.parse(body);
-    for (mode in types) {
+    for (var mode in types) {
         var mode_disruptions = disruptions['disruptions'][mode];
         for (var value = 0; value < mode_disruptions.length; value++) {
-            promiseArray.push(checkDisruptionsStatus(mode_disruptions[value]))
+            promiseArray.push(checkDisruptionsStatus(mode_disruptions[value], mode))
         }
     }
     return Q.all(promiseArray);
 }
 
-function checkDisruptionsStatus(value) {
+function checkDisruptionsStatus(value,mode) {
     var deferred = Q.defer();
     console.log("Checking - " + value.title)
     if (value.disruption_status == "Current") {
@@ -54,7 +54,7 @@ function checkDisruptionsStatus(value) {
         };
         simpledb.getAttributes(params, function (err, data) {
             if (err) {
-                sendMessage(value).then(updateSimpleDB).then(function () {
+                sendMessage(value,mode).then(updateSimpleDB).then(function () {
                     console.log("resolving send message1")
                     deferred.resolve()
                 })
@@ -62,18 +62,18 @@ function checkDisruptionsStatus(value) {
 
             } else {
                 console.log(data);
-                if (!("Attributes" in data)) sendMessage(value).then(updateSimpleDB).then(function () {
+                if (!("Attributes" in data)) sendMessage(value,mode).then(updateSimpleDB).then(function () {
                     console.log("resolving send message2")
                     deferred.resolve(value)
                 })
                 db_result = _.keyBy(data['Attributes'], 'Name');
                 if ("last_updated" in db_result && db_result["last_updated"]["Value"] != value.last_updated) {
-                    sendMessage(value).then(updateSimpleDB).then(function () {
+                    sendMessage(value,mode).then(updateSimpleDB).then(function () {
                         console.log("resolving send message3")
                         deferred.resolve(value)
                     })
                 } else {
-                    deferred.resolve(value)
+                    deferred.resolve(value,mode)
                     console.log("don't need to send update for " + value.disruption_id)
                 }
             }
@@ -85,11 +85,11 @@ function checkDisruptionsStatus(value) {
     return deferred.promise
 }
 
-function sendMessage(value) {
+function sendMessage(value, mode) {
     console.log("sending message for - " + value.disruption_id)
     var deferred = Q.defer();
     var message = ""
-    if (value.title.toLowerCase().indexOf("minor") != -1) {
+    if (value.title.toLowerCase().indexOf("car park") != -1 || value.title.toLowerCase().indexOf("carpark") != -1 || value.title.toLowerCase().indexOf("minor") != -1 || value.disruption_type.toLowerCase().indexOf("planned") != -1) {
         deferred.resolve(value)
         return deferred.promise
     }
